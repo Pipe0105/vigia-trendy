@@ -92,7 +92,7 @@ header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content:
 .clock dt { font-size: 12px; color: var(--muted); }
 .clock dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-.target { display: grid; gap: 12px; align-content: start; border-top: 4px solid var(--berry); }
+.target { display: grid; gap: 12px; align-content: center; border-top: 4px solid var(--berry); }
 .target h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(22px, 3.4vw, 28px); line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
 .target p { margin: 0; color: var(--muted); }
 .target.found { background: var(--berry); border-color: var(--berry); color: #fff; }
@@ -129,9 +129,17 @@ button { font: inherit; cursor: pointer; }
 .toast.ok { color: var(--ok); }
 .toast.bad { color: var(--bad); }
 
-.config { display: grid; gap: 18px; }
-.config-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.config { padding-block: 0; }
+.config[open] { padding-bottom: 20px; }
+.config[open] > summary { margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+.config > .cfg-grid + .cfg-actions { margin-top: 18px; }
+.config-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-block: 16px; cursor: pointer; list-style: none; }
+.config-head::-webkit-details-marker { display: none; }
+.config-head::before { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(-45deg); transition: transform .15s; margin-right: 2px; }
+.config[open] > .config-head::before { transform: rotate(45deg); }
+.config-head:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; border-radius: 8px; }
 .config-head .eyebrow { margin: 0; }
+.cfg-sum { color: var(--muted); font-size: 13px; flex: 1 1 auto; min-width: 0; }
 .dirty { font-size: 13px; font-weight: 600; color: var(--warn); }
 .cfg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
 @media (max-width: 760px) { .cfg-grid { grid-template-columns: minmax(0, 1fr); } }
@@ -238,11 +246,24 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="card target" id="targetCard">
       <p class="eyebrow">Calendario de adviento</p>
       <h2 id="targetTitle">Esperando datos del bot…</h2>
-      <p id="targetText">Lo busca en los 50 productos más nuevos, en todo el catálogo, en los anuncios de la página de inicio y en la página del calendario de 2025. Alerta grande con:</p>
-      <div class="keywords" id="kw"></div>
-      <p class="hint">Solo como referencia: el calendario de 2025 (Nick 90's) abrió preventa el 12 de noviembre. El de este año puede ser distinto. <a href="https://www.maquillajetrendyshop.com/calendario-de-adviento-nick-90s" target="_blank" rel="noopener">Ver la página de 2025</a></p>
+      <p id="targetText" hidden></p>
       <ul id="targetList" hidden></ul>
     </div>
+  </section>
+
+  <section class="card" aria-labelledby="logTitle">
+    <div class="log-head">
+      <p class="eyebrow" id="logTitle"><span class="live" aria-hidden="true"></span>Actividad en vivo</p>
+      <small id="updated">Sin actualizar</small>
+    </div>
+    <div class="filters" role="group" aria-label="Filtrar actividad">
+      <button class="chip-btn" type="button" data-filter="all" aria-pressed="true">Todo</button>
+      <button class="chip-btn" type="button" data-filter="check" aria-pressed="false">Revisiones</button>
+      <button class="chip-btn" type="button" data-filter="tg" aria-pressed="false">Telegram</button>
+      <button class="chip-btn" type="button" data-filter="panel" aria-pressed="false">Panel</button>
+      <button class="chip-btn" type="button" data-filter="problem" aria-pressed="false">Alertas y fallos</button>
+    </div>
+    <ul class="log" id="log"><li class="empty">La actividad del bot aparecerá aquí en cuanto el panel se conecte.</li></ul>
   </section>
 
   <section class="card actions" aria-labelledby="actTitle">
@@ -260,11 +281,20 @@ footer { color: var(--muted); font-size: 13px; }
     <p class="toast" id="toast" role="status" aria-live="polite"></p>
   </section>
 
-  <section class="card config" aria-labelledby="cfgTitle">
-    <div class="config-head">
-      <p class="eyebrow" id="cfgTitle">Configuración del monitor</p>
+  <section class="stats" aria-label="Cifras">
+    <div class="stat"><b id="sChecks">—</b><small>revisiones OK en 24 h</small></div>
+    <div class="stat"><b id="sErrors">—</b><small>fallos en 24 h</small></div>
+    <div class="stat"><b id="sProducts">—</b><small>productos conocidos</small></div>
+    <div class="stat"><b id="sSubs">—</b><small>chats suscritos</small><span class="names" id="sNames"></span></div>
+  </section>
+
+
+  <details class="card config" id="cfgBox">
+    <summary class="config-head">
+      <span class="eyebrow" id="cfgTitle">Configuración del monitor</span>
+      <span class="cfg-sum" id="cfgSummary"></span>
       <span class="dirty" id="cfgDirty" hidden>Cambios sin guardar</span>
-    </div>
+    </summary>
     <div class="cfg-grid">
       <div class="field">
         <span class="label" id="lblFreq">Frecuencia de consulta</span>
@@ -300,29 +330,7 @@ footer { color: var(--muted); font-size: 13px; }
       <button class="btn" id="cfgReset" type="button" disabled>Descartar cambios</button>
       <p class="toast" id="cfgToast" role="status" aria-live="polite"></p>
     </div>
-  </section>
-
-  <section class="stats" aria-label="Cifras">
-    <div class="stat"><b id="sChecks">—</b><small>revisiones OK en 24 h</small></div>
-    <div class="stat"><b id="sErrors">—</b><small>fallos en 24 h</small></div>
-    <div class="stat"><b id="sProducts">—</b><small>productos conocidos</small></div>
-    <div class="stat"><b id="sSubs">—</b><small>chats suscritos</small><span class="names" id="sNames"></span></div>
-  </section>
-
-  <section class="card" aria-labelledby="logTitle">
-    <div class="log-head">
-      <p class="eyebrow" id="logTitle"><span class="live" aria-hidden="true"></span>Actividad en vivo</p>
-      <small id="updated">Sin actualizar</small>
-    </div>
-    <div class="filters" role="group" aria-label="Filtrar actividad">
-      <button class="chip-btn" type="button" data-filter="all" aria-pressed="true">Todo</button>
-      <button class="chip-btn" type="button" data-filter="check" aria-pressed="false">Revisiones</button>
-      <button class="chip-btn" type="button" data-filter="tg" aria-pressed="false">Telegram</button>
-      <button class="chip-btn" type="button" data-filter="panel" aria-pressed="false">Panel</button>
-      <button class="chip-btn" type="button" data-filter="problem" aria-pressed="false">Alertas y fallos</button>
-    </div>
-    <ul class="log" id="log"><li class="empty">La actividad del bot aparecerá aquí en cuanto el panel se conecte.</li></ul>
-  </section>
+  </details>
 
   <footer>El panel se actualiza solo cada 10 segundos.</footer>
 </div>
@@ -466,7 +474,6 @@ footer { color: var(--muted); font-size: 13px; }
     }
     const everyCap = everyTxt().charAt(0).toUpperCase() + everyTxt().slice(1);
     $("freq").textContent = snap.cron ? everyCap + (cfg && cfg.jitter_s ? " · +0–" + cfg.jitter_s + " s al azar" : "") + (snap.cron.active ? "" : " (pausado)") : "—";
-    $("kw").innerHTML = ((cfg && cfg.strong) || []).map((t) => `<span class="kw">${esc(t)}</span>`).join("");
     const paused = snap.backoff_until && snap.backoff_until > new Date(snap.now).getTime();
     if (paused) $("fullScan").textContent = "En pausa hasta " + fmtShort(snap.backoff_until);
     else if (snap.full_last) $("fullScan").textContent = "Completo a las " + fmtShort(snap.full_last) + (snap.full_total ? " · " + snap.full_total + " productos" : "");
@@ -481,17 +488,14 @@ footer { color: var(--muted); font-size: 13px; }
       card.classList.add("found");
       $("targetTitle").textContent = avail ? "¡Ya está a la venta!" : "Apareció en la tienda, todavía sin stock";
       $("targetText").textContent = avail ? "Las alertas ya salieron por Telegram. Entra ya:" : "El bot avisa otra vez apenas se pueda comprar.";
-      $("kw").hidden = true;
-      document.querySelector(".target .hint").hidden = true;
+      $("targetText").hidden = false;
       $("targetList").hidden = false;
       $("targetList").innerHTML = t.map((p) => `<li><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.name)}</a>${p.price ? " · " + money(p.price) : ""} · ${p.available ? "con stock" : "sin stock"}</li>`).join("") +
         (avail ? `<li style="list-style:none;margin-left:-18px;margin-top:10px"><a class="buy" href="${esc(avail.link)}" target="_blank" rel="noopener">Abrir y comprar</a></li>` : "");
     } else {
       card.classList.remove("found");
       $("targetTitle").textContent = "Todavía no aparece";
-      $("targetText").textContent = "Lo busca en los 50 productos más nuevos " + everyTxt() + ", en todo el catálogo cada ~" + fullMins() + " minutos, en los anuncios de la página de inicio y en la página del calendario de 2025. Alerta grande con:";
-      $("kw").hidden = false;
-      document.querySelector(".target .hint").hidden = false;
+      $("targetText").hidden = true;
       $("targetList").hidden = true;
     }
 
@@ -579,6 +583,7 @@ footer { color: var(--muted); font-size: 13px; }
     $("chipsSoft").innerHTML = chipsHtml(draft.soft, "soft");
     const dirty = isDirty();
     $("cfgDirty").hidden = !dirty;
+    if (cfg) $("cfgSummary").textContent = (cfg.interval_min === 1 ? "Cada minuto" : "Cada " + cfg.interval_min + " min") + " · variación " + cfg.jitter_s + " s · " + cfg.strong.length + " términos principales, " + cfg.soft.length + " secundarios";
     $("cfgSave").disabled = !dirty;
     $("cfgReset").disabled = !dirty;
   }
@@ -622,6 +627,9 @@ footer { color: var(--muted); font-size: 13px; }
       cfgToast(e && e.code === "server" && e.message ? "No se guardó: " + e.message : explainError(e)[0], "bad");
     }
   });
+
+  try { if (localStorage.getItem("vigia_cfg_open") === "1") $("cfgBox").open = true; } catch (e) {}
+  $("cfgBox").addEventListener("toggle", () => { try { localStorage.setItem("vigia_cfg_open", $("cfgBox").open ? "1" : "0"); } catch (e) {} });
 
   function askKey() {
     $("keybox").hidden = false;
