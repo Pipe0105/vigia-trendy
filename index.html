@@ -129,6 +129,31 @@ button { font: inherit; cursor: pointer; }
 .toast.ok { color: var(--ok); }
 .toast.bad { color: var(--bad); }
 
+.config { display: grid; gap: 18px; }
+.config-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.config-head .eyebrow { margin: 0; }
+.dirty { font-size: 13px; font-weight: 600; color: var(--warn); }
+.cfg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
+@media (max-width: 760px) { .cfg-grid { grid-template-columns: minmax(0, 1fr); } }
+.field { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.field > label, .field > .label { font-weight: 600; font-size: 14px; }
+.field .help { margin: 0; font-size: 13px; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.seg button { padding: 7px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.seg button[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: var(--surface); }
+.seg button:focus-visible, .range:focus-visible, .chips button:focus-visible, .addterm input:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.range-row { display: flex; align-items: center; gap: 12px; }
+.range { flex: 1; min-width: 0; accent-color: var(--teal); }
+.range-val { font-family: var(--f-mono); font-weight: 500; min-width: 4.5ch; text-align: right; font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 34px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 10px; border-radius: 8px; font-family: var(--f-mono); font-size: 13px; background: var(--sunk); color: var(--ink); }
+.chip.strong { background: var(--berry-soft); color: var(--berry); }
+.chip button { border: 0; background: transparent; color: inherit; width: 22px; height: 22px; border-radius: 6px; font-size: 16px; line-height: 1; display: grid; place-items: center; }
+.chip button:hover { background: color-mix(in srgb, currentColor 15%, transparent); }
+.addterm { display: flex; gap: 8px; }
+.addterm input { flex: 1; min-width: 0; padding: 8px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; }
+.cfg-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.btn:disabled { opacity: .5; cursor: default; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 760px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .stat { padding: 14px 16px; border-radius: 12px; background: var(--sunk); min-width: 0; }
@@ -213,8 +238,8 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="card target" id="targetCard">
       <p class="eyebrow">Calendario de adviento</p>
       <h2 id="targetTitle">Esperando datos del bot…</h2>
-      <p id="targetText">Lo busca en los 50 productos más nuevos cada 2 minutos, en todo el catálogo cada ~8 minutos, en los anuncios de la página de inicio y en la página del calendario de 2025. Alerta grande con:</p>
-      <div class="keywords" id="kw"><span class="kw">adviento</span><span class="kw">calendario</span><span class="kw">advent</span></div>
+      <p id="targetText">Lo busca en los 50 productos más nuevos, en todo el catálogo, en los anuncios de la página de inicio y en la página del calendario de 2025. Alerta grande con:</p>
+      <div class="keywords" id="kw"></div>
       <p class="hint">Solo como referencia: el calendario de 2025 (Nick 90's) abrió preventa el 12 de noviembre. El de este año puede ser distinto. <a href="https://www.maquillajetrendyshop.com/calendario-de-adviento-nick-90s" target="_blank" rel="noopener">Ver la página de 2025</a></p>
       <ul id="targetList" hidden></ul>
     </div>
@@ -233,6 +258,48 @@ footer { color: var(--muted); font-size: 13px; }
       <button class="btn go" id="confirmYes" type="button">Sí, enviar</button>
     </div>
     <p class="toast" id="toast" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card config" aria-labelledby="cfgTitle">
+    <div class="config-head">
+      <p class="eyebrow" id="cfgTitle">Configuración del monitor</p>
+      <span class="dirty" id="cfgDirty" hidden>Cambios sin guardar</span>
+    </div>
+    <div class="cfg-grid">
+      <div class="field">
+        <span class="label" id="lblFreq">Frecuencia de consulta</span>
+        <div class="seg" id="cfgFreq" role="group" aria-labelledby="lblFreq">
+          <button type="button" data-v="1" aria-pressed="false">1 min</button>
+          <button type="button" data-v="2" aria-pressed="false">2 min</button>
+          <button type="button" data-v="3" aria-pressed="false">3 min</button>
+          <button type="button" data-v="5" aria-pressed="false">5 min</button>
+          <button type="button" data-v="10" aria-pressed="false">10 min</button>
+        </div>
+        <p class="help">Cada cuánto revisa la tienda. Más seguido detecta antes, pero hace más consultas.</p>
+      </div>
+      <div class="field">
+        <label for="cfgJitter">Variación aleatoria (jitter)</label>
+        <div class="range-row"><input class="range" id="cfgJitter" type="range" min="0" max="45" step="1" value="15"><span class="range-val" id="cfgJitterVal">15 s</span></div>
+        <p class="help">Añade segundos aleatorios a cada consulta para emular tráfico humano natural. Las consultas también se separan con pausas al azar.</p>
+      </div>
+      <div class="field">
+        <label for="addStrong">Términos principales</label>
+        <p class="help">Disparan la alerta grande: 3 mensajes con sonido.</p>
+        <div class="chips" id="chipsStrong"></div>
+        <form class="addterm" id="formStrong"><input id="addStrong" autocomplete="off" placeholder="Agregar término, p. ej. nick"><button class="btn" type="submit">Agregar</button></form>
+      </div>
+      <div class="field">
+        <label for="addSoft">Términos secundarios</label>
+        <p class="help">Un aviso con sonido para que revises si es el calendario con otro nombre.</p>
+        <div class="chips" id="chipsSoft"></div>
+        <form class="addterm" id="formSoft"><input id="addSoft" autocomplete="off" placeholder="Agregar término, p. ej. caja"><button class="btn" type="submit">Agregar</button></form>
+      </div>
+    </div>
+    <div class="cfg-actions">
+      <button class="btn go" id="cfgSave" type="button" disabled>Guardar configuración</button>
+      <button class="btn" id="cfgReset" type="button" disabled>Descartar cambios</button>
+      <p class="toast" id="cfgToast" role="status" aria-live="polite"></p>
+    </div>
   </section>
 
   <section class="stats" aria-label="Cifras">
@@ -264,7 +331,7 @@ footer { color: var(--muted); font-size: 13px; }
 (() => {
   const API = "https://rzekiwjxgryzjqogvcxs.supabase.co/functions/v1/trendy-panel";
   const POLL_MS = 10000;
-  const CYCLE_MS = 120000;
+  let CYCLE_MS = 120000;
   const $ = (id) => document.getElementById(id);
   const tz = { timeZone: "America/Bogota" };
   const fmtTime = (d) => new Date(d).toLocaleTimeString("es-CO", { ...tz, hour: "numeric", minute: "2-digit", second: "2-digit" });
@@ -281,6 +348,10 @@ footer { color: var(--muted); font-size: 13px; }
   let firstRender = true;
   let pollTimer = null;
   let busy = false;
+  let cfg = null;        // configuración guardada
+  let draft = null;      // lo que se está editando
+  const everyTxt = () => { const n = (cfg && cfg.interval_min) || 2; return n === 1 ? "cada minuto" : "cada " + n + " minutos"; };
+  const fullMins = () => { const n = (cfg && cfg.interval_min) || 2; const per = Math.max(1, Math.min(4, Math.round(n))); return Math.ceil(((snap && snap.full_total) || 310) / 50 / per) * n; };
 
   const R = 52, CIRC = 2 * Math.PI * R;
   $("ringBar").style.strokeDasharray = CIRC;
@@ -364,6 +435,7 @@ footer { color: var(--muted); font-size: 13px; }
       const what = d.action === "prueba" ? "Alerta de prueba enviada" : d.action === "estado" ? "Estado enviado" : "Acción " + esc(d.action);
       return { tag: "panel", label: "Panel", msg: what + " a " + (d.sent ?? 0) + (d.sent === 1 ? " chat" : " chats") };
     }
+    if (e.kind === "config") return { tag: "panel", label: "Config", msg: "Configuración guardada: " + (d.interval_min === 1 ? "cada minuto" : "cada " + d.interval_min + " min") + " · variación " + d.jitter_s + " s · " + (d.strong || []).length + " términos principales y " + (d.soft || []).length + " secundarios" };
     return { tag: "", label: esc(e.kind), msg: esc(JSON.stringify(d)) };
   }
   function matches(tag) {
@@ -387,7 +459,14 @@ footer { color: var(--muted); font-size: 13px; }
     const last = runs[0];
     $("lastCheck").textContent = last ? fmtTime(last.ran_at) : "—";
     $("lastResult").textContent = last ? (last.ok ? (last.info && last.info.target_alert ? "¡Calendario encontrado!" : "Todo bien") : "Falló") : "—";
-    $("freq").textContent = snap.cron ? "Cada 2 minutos" + (snap.cron.active ? "" : " (pausado)") : "—";
+    if (snap.config) {
+      cfg = snap.config;
+      CYCLE_MS = (cfg.interval_min || 2) * 60000;
+      if (!isDirty()) { draft = clone(cfg); renderConfig(); }
+    }
+    const everyCap = everyTxt().charAt(0).toUpperCase() + everyTxt().slice(1);
+    $("freq").textContent = snap.cron ? everyCap + (cfg && cfg.jitter_s ? " · +0–" + cfg.jitter_s + " s al azar" : "") + (snap.cron.active ? "" : " (pausado)") : "—";
+    $("kw").innerHTML = ((cfg && cfg.strong) || []).map((t) => `<span class="kw">${esc(t)}</span>`).join("");
     const paused = snap.backoff_until && snap.backoff_until > new Date(snap.now).getTime();
     if (paused) $("fullScan").textContent = "En pausa hasta " + fmtShort(snap.backoff_until);
     else if (snap.full_last) $("fullScan").textContent = "Completo a las " + fmtShort(snap.full_last) + (snap.full_total ? " · " + snap.full_total + " productos" : "");
@@ -410,7 +489,7 @@ footer { color: var(--muted); font-size: 13px; }
     } else {
       card.classList.remove("found");
       $("targetTitle").textContent = "Todavía no aparece";
-      $("targetText").textContent = "Lo busca en los 50 productos más nuevos cada 2 minutos, en todo el catálogo cada ~8 minutos, en los anuncios de la página de inicio y en la página del calendario de 2025. Alerta grande con:";
+      $("targetText").textContent = "Lo busca en los 50 productos más nuevos " + everyTxt() + ", en todo el catálogo cada ~" + fullMins() + " minutos, en los anuncios de la página de inicio y en la página del calendario de 2025. Alerta grande con:";
       $("kw").hidden = false;
       document.querySelector(".target .hint").hidden = false;
       $("targetList").hidden = true;
@@ -483,6 +562,66 @@ footer { color: var(--muted); font-size: 13px; }
     document.querySelectorAll(".chip-btn").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
     render();
   }));
+
+  // ---------- Configuración ----------
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  function isDirty() { return !!(cfg && draft && JSON.stringify(draft) !== JSON.stringify(cfg)); }
+  function chipsHtml(list, kind) {
+    return list.map((t, i) => `<span class="chip ${kind === "strong" ? "strong" : ""}">${esc(t)}<button type="button" data-kind="${kind}" data-i="${i}" aria-label="Quitar ${esc(t)}">×</button></span>`).join("") ||
+      `<span class="help">Sin términos.</span>`;
+  }
+  function renderConfig() {
+    if (!draft) return;
+    document.querySelectorAll("#cfgFreq button").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === draft.interval_min)));
+    $("cfgJitter").value = draft.jitter_s;
+    $("cfgJitterVal").textContent = draft.jitter_s + " s";
+    $("chipsStrong").innerHTML = chipsHtml(draft.strong, "strong");
+    $("chipsSoft").innerHTML = chipsHtml(draft.soft, "soft");
+    const dirty = isDirty();
+    $("cfgDirty").hidden = !dirty;
+    $("cfgSave").disabled = !dirty;
+    $("cfgReset").disabled = !dirty;
+  }
+  function cfgToast(text, kind) { $("cfgToast").className = "toast " + (kind || ""); $("cfgToast").textContent = text; }
+  const normTerm = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  document.querySelectorAll("#cfgFreq button").forEach((b) => b.addEventListener("click", () => {
+    if (!draft) return; draft.interval_min = Number(b.dataset.v); renderConfig(); cfgToast("");
+  }));
+  $("cfgJitter").addEventListener("input", () => { if (!draft) return; draft.jitter_s = Number($("cfgJitter").value); renderConfig(); cfgToast(""); });
+  function addTerm(kind, input) {
+    if (!draft) return;
+    const t = normTerm(input.value);
+    if (t.length < 2) { cfgToast("Escribe al menos 2 letras.", "bad"); return; }
+    if (draft.strong.includes(t) || draft.soft.includes(t)) { cfgToast("«" + t + "» ya está en la lista.", "bad"); return; }
+    if (kind === "strong" && draft.strong.length >= 10) { cfgToast("Máximo 10 términos principales.", "bad"); return; }
+    if (kind === "soft" && draft.soft.length >= 20) { cfgToast("Máximo 20 términos secundarios.", "bad"); return; }
+    draft[kind].push(t); input.value = ""; cfgToast(""); renderConfig();
+  }
+  $("formStrong").addEventListener("submit", (ev) => { ev.preventDefault(); addTerm("strong", $("addStrong")); });
+  $("formSoft").addEventListener("submit", (ev) => { ev.preventDefault(); addTerm("soft", $("addSoft")); });
+  document.querySelector(".config").addEventListener("click", (ev) => {
+    const b = ev.target.closest(".chip button"); if (!b || !draft) return;
+    const kind = b.dataset.kind, i = Number(b.dataset.i);
+    if (kind === "strong" && draft.strong.length === 1) { cfgToast("Debe quedar al menos un término principal.", "bad"); return; }
+    draft[kind].splice(i, 1); cfgToast(""); renderConfig();
+  });
+  $("cfgReset").addEventListener("click", () => { draft = clone(cfg); renderConfig(); cfgToast("Cambios descartados."); });
+  $("cfgSave").addEventListener("click", async () => {
+    if (!isDirty()) return;
+    $("cfgSave").disabled = true;
+    cfgToast("Guardando…");
+    try {
+      const r = await api("POST", { config: draft });
+      cfg = r.config; draft = clone(cfg);
+      CYCLE_MS = cfg.interval_min * 60000;
+      renderConfig();
+      cfgToast("Guardado. La próxima revisión ya usa esta configuración.", "ok");
+      setTimeout(refresh, 1500);
+    } catch (e) {
+      $("cfgSave").disabled = false;
+      cfgToast(e && e.code === "server" && e.message ? "No se guardó: " + e.message : explainError(e)[0], "bad");
+    }
+  });
 
   function askKey() {
     $("keybox").hidden = false;
