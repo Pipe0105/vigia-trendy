@@ -444,8 +444,10 @@ footer { color: var(--muted); font-size: 13px; }
     const bits = [];
     const who = i.manual ? "Revisión manual" : "Revisó la tienda";
     if (i.baseline) bits.push("Primera lectura: guardó " + i.baseline + " productos de la tienda");
-    else if (i.new_products) bits.push(who + " · " + i.new_products + (i.new_products === 1 ? " producto nuevo" : " productos nuevos") + " (aviso en silencio)");
-    else bits.push(who + " · sin cambios");
+    else if (i.new_products) bits.push(who + " · " + (i.new_products === 1 ? "producto nuevo: " : i.new_products + " productos nuevos: ") + esc((i.new_list || []).join(", ")));
+    else if (!i.restocked) bits.push(who + " · sin cambios");
+    else bits.push(who);
+    if (i.restocked) bits.push(i.restocked + (i.restocked === 1 ? " producto volvió" : " productos volvieron") + " a tener stock");
     if (i.full_baseline) bits.push("primera revisión completa del catálogo: " + i.full_baseline + " productos guardados");
     if (i.webhook) bits.push("Telegram conectado para respuestas al instante");
     if (i.backoff) return { tag: "warn", label: "Pausa", msg: bits.join(" · ") + " · " + esc(i.backoff) };
