@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Vigía Trendy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: panel de control de una sola columna en móvil; en escritorio, reloj + calendario arriba, acciones y cifras al medio, bitácora en vivo abajo. */
+:root {
+  --bg: #f5f4f1;
+  --surface: #ffffff;
+  --sunk: #ecebe6;
+  --ink: #1d1f24;
+  --muted: #676a72;
+  --line: #e0ded8;
+  --berry: #c2185b;
+  --berry-soft: #fbe3ec;
+  --teal: #0f6b6a;
+  --teal-soft: #d8ecea;
+  --ok: #1f7a4d;
+  --ok-soft: #dcefe4;
+  --warn: #a35f00;
+  --warn-soft: #f7e7cc;
+  --bad: #b3261e;
+  --bad-soft: #f6dcd9;
+  --info: #4d4f9e;
+  --info-soft: #e3e3f5;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121417; --surface: #1a1d21; --sunk: #23272c; --ink: #eef0f2; --muted: #9ba1a9; --line: #2e333a;
+    --berry: #d94a82; --berry-soft: #43192b; --teal: #4fd1c5; --teal-soft: #143433; --ok: #5fd39a; --ok-soft: #173327; --warn: #f2b45a; --warn-soft: #3b2a12;
+    --bad: #ff7b72; --bad-soft: #42191a; --info: #a9abff; --info-soft: #25264a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121417; --surface: #1a1d21; --sunk: #23272c; --ink: #eef0f2; --muted: #9ba1a9; --line: #2e333a;
+  --berry: #d94a82; --berry-soft: #43192b; --teal: #4fd1c5; --teal-soft: #143433; --ok: #5fd39a; --ok-soft: #173327; --warn: #f2b45a; --warn-soft: #3b2a12;
+  --bad: #ff7b72; --bad-soft: #42191a; --info: #a9abff; --info-soft: #25264a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.02em; line-height: 1; margin: 0; text-wrap: balance; }
+.brand h1 em { font-style: normal; color: var(--berry); }
+.brand p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.brand a { color: inherit; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-weight: 600; font-size: 13px; background: var(--sunk); color: var(--muted); }
+.pill .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.ok .dot { animation: pulse 2s ease-out infinite; }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
+
+.banner { padding: 14px 16px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.banner p { margin: 0; flex: 1 1 260px; min-width: 0; }
+
+.top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 20px; }
+@media (max-width: 760px) { .top { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; min-width: 0; }
+.eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
+
+.clock { display: flex; align-items: center; gap: 20px; }
+.ring { width: 132px; height: 132px; flex: none; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .track { fill: none; stroke: var(--sunk); stroke-width: 10; }
+.ring .bar { fill: none; stroke: var(--teal); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.9s linear; }
+.ring .num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-mono); font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.clock dl { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.clock dt { font-size: 12px; color: var(--muted); }
+.clock dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.target { display: grid; gap: 12px; align-content: start; border-top: 4px solid var(--berry); }
+.target h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(22px, 3.4vw, 28px); line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.target p { margin: 0; color: var(--muted); }
+.target.found { background: var(--berry); border-color: var(--berry); color: #fff; }
+.target.found .eyebrow, .target.found p { color: #ffe3ec; }
+.target .buy { display: inline-flex; align-self: start; padding: 10px 16px; border-radius: 10px; background: #fff; color: #8a0f3c; font-weight: 700; text-decoration: none; }
+.target ul { margin: 0; padding-left: 18px; }
+.target li a { color: inherit; font-weight: 600; }
+.keywords { display: flex; flex-wrap: wrap; gap: 6px; }
+.kw { font-family: var(--f-mono); font-size: 12px; padding: 3px 8px; border-radius: 6px; background: var(--sunk); color: var(--muted); }
+
+.actions { display: grid; gap: 12px; }
+.btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 700px) { .btns { grid-template-columns: minmax(0, 1fr); } }
+button { font: inherit; cursor: pointer; }
+.act { display: grid; gap: 4px; text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); transition: border-color .15s, background .15s; }
+.act strong { font-weight: 600; font-size: 15px; }
+.act span { font-size: 13px; color: var(--muted); }
+.act:hover:not(:disabled) { border-color: var(--teal); background: var(--teal-soft); }
+.act:focus-visible, .btn:focus-visible, .chip-btn:focus-visible, input:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.act:disabled { opacity: .55; cursor: wait; }
+.act.primary { background: var(--berry); border-color: var(--berry); color: #fff; }
+.act.primary span { color: #ffe3ec; }
+.act.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--berry) 88%, #000); }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--sunk); }
+.confirm p { margin: 0; flex: 1 1 240px; min-width: 0; }
+.btn { padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; }
+.btn.go { background: var(--berry); border-color: var(--berry); color: #fff; }
+.keybox { display: grid; gap: 10px; }
+.keybox form { display: flex; flex-wrap: wrap; gap: 8px; }
+.keybox input { flex: 1 1 220px; min-width: 0; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-family: var(--f-mono); }
+.toast { margin: 0; font-size: 14px; color: var(--muted); min-height: 1.5em; }
+.toast.ok { color: var(--ok); }
+.toast.bad { color: var(--bad); }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { padding: 14px 16px; border-radius: 12px; background: var(--sunk); min-width: 0; }
+.stat b { display: block; font-family: var(--f-display); font-weight: 700; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat small { color: var(--muted); font-size: 13px; }
+.stat .names { display: block; color: var(--ink); font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
+
+.log-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.log-head .eyebrow { margin: 0; display: inline-flex; align-items: center; gap: 8px; }
+.live { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); animation: pulse 2s ease-out infinite; color: var(--teal); }
+.log-head small { color: var(--muted); font-size: 13px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip-btn { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; }
+.chip-btn[aria-pressed="true"] { background: var(--teal); color: var(--surface); border-color: var(--teal); }
+.log { list-style: none; margin: 0; padding: 0; max-height: 460px; overflow-y: auto; border-top: 1px solid var(--line); }
+.log li { display: grid; grid-template-columns: 112px 92px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 9px 2px; border-bottom: 1px solid var(--line); }
+@media (max-width: 520px) { .log li { grid-template-columns: auto minmax(0, 1fr); } .log li .tag { grid-column: 2; justify-self: start; } .log li .msg { grid-column: 1 / -1; } }
+.log time { font-family: var(--f-mono); font-size: 13px; white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 6px; justify-self: start; background: var(--sunk); color: var(--muted); }
+.tag.check { background: var(--ok-soft); color: var(--ok); }
+.tag.alert { background: var(--berry); color: #fff; }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+.tag.err { background: var(--bad-soft); color: var(--bad); }
+.tag.tg { background: var(--info-soft); color: var(--info); }
+.tag.panel { background: var(--berry-soft); color: var(--berry); }
+.tag.check { background: var(--teal-soft); color: var(--teal); }
+.msg { min-width: 0; overflow-wrap: anywhere; }
+.msg code { font-family: var(--f-mono); font-size: 13px; }
+.log li.fresh { animation: flash 1.6s ease-out; }
+@keyframes flash { from { background: var(--teal-soft); } to { background: transparent; } }
+.empty { padding: 24px 4px; color: var(--muted); }
+footer { color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+<style>html{color-scheme:light}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Vigía <em>Trendy</em></h1>
+      <p>Vigila maquillajetrendyshop.com y avisa por Telegram a <a href="https://t.me/MaireTrendybot" target="_blank" rel="noopener">@MaireTrendybot</a></p>
+    </div>
+    <span class="pill" id="pill"><span class="dot"></span><span id="pillText">Conectando…</span></span>
+  </header>
+
+  <div class="banner" id="banner" hidden>
+    <p id="bannerText"></p>
+  </div>
+
+  <div class="card keybox" id="keybox" hidden>
+    <p class="eyebrow">Código de acceso</p>
+    <p style="margin:0">Abre el link que te compartieron o pega aquí el código del panel.</p>
+    <form id="keyForm"><input id="keyInput" autocomplete="off" placeholder="Código del panel" aria-label="Código del panel"><button class="btn go" type="submit">Entrar</button></form>
+  </div>
+
+  <section class="top">
+    <div class="card">
+      <p class="eyebrow">Próxima revisión de la tienda</p>
+      <div class="clock">
+        <div class="ring" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"></circle><circle class="bar" id="ringBar" cx="60" cy="60" r="52"></circle></svg>
+          <div class="num" id="countdown">–:––</div>
+        </div>
+        <dl>
+          <div><dt>Última revisión</dt><dd id="lastCheck">—</dd></div>
+          <div><dt>Frecuencia</dt><dd id="freq">Cada 2 minutos</dd></div>
+          <div><dt>Resultado</dt><dd id="lastResult">—</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card target" id="targetCard">
+      <p class="eyebrow">Calendario de adviento</p>
+      <h2 id="targetTitle">Esperando datos del bot…</h2>
+      <p id="targetText">Cada revisión busca en los 50 productos más nuevos y hace búsquedas directas por estas palabras:</p>
+      <div class="keywords" id="kw"><span class="kw">adviento</span><span class="kw">calendario</span><span class="kw">advent</span></div>
+      <ul id="targetList" hidden></ul>
+    </div>
+  </section>
+
+  <section class="card actions" aria-labelledby="actTitle">
+    <p class="eyebrow" id="actTitle">Probar el bot</p>
+    <div class="btns">
+      <button class="act" id="btnEstado" type="button" data-action="estado"><strong>Enviar estado a Telegram</strong><span>Todos los suscritos reciben el resumen, igual que con /estado</span></button>
+      <button class="act primary" id="btnPrueba" type="button" data-action="prueba"><strong>Enviar alerta de prueba</strong><span>Simula que salió el calendario: 3 mensajes con sonido</span></button>
+      <button class="act" id="btnRevisar" type="button" data-action="revisar"><strong>Revisar la tienda ahora</strong><span>Hace una revisión extra sin esperar el reloj</span></button>
+    </div>
+    <div class="confirm" id="confirm" hidden>
+      <p>La alerta de prueba le suena a todos los chats suscritos. ¿Enviarla?</p>
+      <button class="btn" id="confirmNo" type="button">Cancelar</button>
+      <button class="btn go" id="confirmYes" type="button">Sí, enviar</button>
+    </div>
+    <p class="toast" id="toast" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="stats" aria-label="Cifras">
+    <div class="stat"><b id="sChecks">—</b><small>revisiones OK en 24 h</small></div>
+    <div class="stat"><b id="sErrors">—</b><small>fallos en 24 h</small></div>
+    <div class="stat"><b id="sProducts">—</b><small>productos conocidos</small></div>
+    <div class="stat"><b id="sSubs">—</b><small>chats suscritos</small><span class="names" id="sNames"></span></div>
+  </section>
+
+  <section class="card" aria-labelledby="logTitle">
+    <div class="log-head">
+      <p class="eyebrow" id="logTitle"><span class="live" aria-hidden="true"></span>Actividad en vivo</p>
+      <small id="updated">Sin actualizar</small>
+    </div>
+    <div class="filters" role="group" aria-label="Filtrar actividad">
+      <button class="chip-btn" type="button" data-filter="all" aria-pressed="true">Todo</button>
+      <button class="chip-btn" type="button" data-filter="check" aria-pressed="false">Revisiones</button>
+      <button class="chip-btn" type="button" data-filter="tg" aria-pressed="false">Telegram</button>
+      <button class="chip-btn" type="button" data-filter="panel" aria-pressed="false">Panel</button>
+      <button class="chip-btn" type="button" data-filter="problem" aria-pressed="false">Alertas y fallos</button>
+    </div>
+    <ul class="log" id="log"><li class="empty">La actividad del bot aparecerá aquí en cuanto el panel se conecte.</li></ul>
+  </section>
+
+  <footer>El panel se actualiza solo cada 10 segundos.</footer>
+</div>
+
+<script>
+(() => {
+  const API = "https://rzekiwjxgryzjqogvcxs.supabase.co/functions/v1/trendy-panel";
+  const POLL_MS = 10000;
+  const CYCLE_MS = 120000;
+  const $ = (id) => document.getElementById(id);
+  const tz = { timeZone: "America/Bogota" };
+  const fmtTime = (d) => new Date(d).toLocaleTimeString("es-CO", { ...tz, hour: "numeric", minute: "2-digit", second: "2-digit" });
+  const fmtShort = (d) => new Date(d).toLocaleTimeString("es-CO", { ...tz, hour: "numeric", minute: "2-digit" });
+  const money = (n) => "$ " + Math.round(n).toLocaleString("es-CO");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  let key = "";
+  const mcp = true;
+  let snap = null;
+  let serverOffset = 0;
+  let filter = "all";
+  let seen = new Set();
+  let firstRender = true;
+  let pollTimer = null;
+  let busy = false;
+
+  const R = 52, CIRC = 2 * Math.PI * R;
+  $("ringBar").style.strokeDasharray = CIRC;
+  $("ringBar").style.strokeDashoffset = CIRC;
+
+  function setPill(kind, text) {
+    $("pill").className = "pill " + kind;
+    $("pillText").textContent = text;
+  }
+  function banner(text) {
+    $("banner").hidden = !text;
+    $("bannerText").textContent = text || "";
+  }
+  function toast(text, kind) {
+    $("toast").className = "toast " + (kind || "");
+    $("toast").textContent = text;
+  }
+
+  class ApiError extends Error { constructor(code, msg) { super(msg || code); this.code = code; } }
+  async function api(method, body) {
+    let r;
+    try {
+      r = await fetch(API, { method, headers: { "x-panel-key": key, ...(body ? { "content-type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
+    } catch (e) { throw new ApiError("network"); }
+    const data = await r.json().catch(() => ({}));
+    if (r.status === 401) throw new ApiError("bad_key");
+    if (r.status === 429) throw new ApiError("wait");
+    if (!r.ok) throw new ApiError("server", data.error);
+    return data;
+  }
+  function explainError(e) {
+    switch (e && e.code) {
+      case "bad_key": return ["El código de acceso no es válido. Pide el link actualizado."];
+      case "wait": return ["Espera unos segundos entre acciones."];
+      case "network": return ["Sin conexión con el bot. Reintento en la próxima actualización."];
+      default: return ["El bot respondió con un error" + (e && e.message ? ": " + e.message : "") + ". Reintento en la próxima actualización."];
+    }
+  }
+
+  async function refresh() {
+    if (!mcp) return;
+    try {
+      snap = await api("GET");
+      serverOffset = new Date(snap.now).getTime() - Date.now();
+      banner("");
+      render();
+      $("updated").textContent = "Actualizado " + fmtTime(snap.now);
+    } catch (e) {
+      const [text] = explainError(e);
+      banner(text);
+      if (!snap) setPill("bad", "Sin conexión");
+      else $("updated").textContent = "Datos de " + fmtTime(snap.now) + " · sin actualizar";
+      if (e && e.code === "bad_key") { stopPolling(); askKey(); }
+    }
+  }
+  function startPolling() { stopPolling(); pollTimer = setInterval(refresh, POLL_MS); }
+  function stopPolling() { if (pollTimer) clearInterval(pollTimer); pollTimer = null; }
+
+  function describeRun(r) {
+    const i = r.info || {};
+    if (i.error) return { tag: "err", label: "Fallo", msg: "No pudo revisar la tienda: " + esc(i.error) + (i.fetch_errors ? " <code>" + esc(i.fetch_errors[0]) + "</code>" : "") };
+    if (i.target_alert) return { tag: "alert", label: "Alerta", msg: "Encontró <b>" + esc(i.target_alert) + "</b> y avisó por Telegram" };
+    const bits = [];
+    const who = i.manual ? "Revisión manual" : "Revisó la tienda";
+    if (i.baseline) bits.push("Primera lectura: guardó " + i.baseline + " productos de la tienda");
+    else if (i.new_products) bits.push(who + " · " + i.new_products + (i.new_products === 1 ? " producto nuevo" : " productos nuevos") + " (aviso en silencio)");
+    else bits.push(who + " · sin cambios");
+    if (i.webhook) bits.push("Telegram conectado para respuestas al instante");
+    if (i.warn) return { tag: "warn", label: "Aviso", msg: bits.join(" · ") + " · " + esc(i.warn) };
+    if (i.fetch_errors) return { tag: "warn", label: "Parcial", msg: bits.join(" · ") + " · falló una búsqueda" };
+    return { tag: "check", label: "Revisión", msg: bits.join(" · ") };
+  }
+  function describeEvent(e) {
+    const d = e.detail || {};
+    if (e.kind === "telegram") return { tag: "tg", label: "Telegram", msg: "<code>" + esc(d.cmd || "mensaje") + "</code> de " + esc(d.from || "alguien") };
+    if (e.kind === "panel") {
+      const what = d.action === "prueba" ? "Alerta de prueba enviada" : d.action === "estado" ? "Estado enviado" : "Acción " + esc(d.action);
+      return { tag: "panel", label: "Panel", msg: what + " a " + (d.sent ?? 0) + (d.sent === 1 ? " chat" : " chats") };
+    }
+    return { tag: "", label: esc(e.kind), msg: esc(JSON.stringify(d)) };
+  }
+  function matches(tag) {
+    if (filter === "all") return true;
+    if (filter === "problem") return tag === "alert" || tag === "err" || tag === "warn";
+    if (filter === "check") return tag === "check" || tag === "alert" || tag === "err" || tag === "warn";
+    return tag === filter;
+  }
+
+  function render() {
+    if (!snap) return;
+    // Estado general
+    const lastOk = snap.last_ok ? new Date(snap.last_ok).getTime() : 0;
+    const age = new Date(snap.now).getTime() - lastOk;
+    if (snap.cron && !snap.cron.active) setPill("bad", "Pausado");
+    else if (snap.failures >= 3) setPill("bad", "La tienda no responde");
+    else if (!lastOk || age > 6 * 60000) setPill("warn", "Sin revisiones recientes");
+    else setPill("ok", "Vigilando");
+
+    const runs = snap.runs || [];
+    const last = runs[0];
+    $("lastCheck").textContent = last ? fmtTime(last.ran_at) : "—";
+    $("lastResult").textContent = last ? (last.ok ? (last.info && last.info.target_alert ? "¡Calendario encontrado!" : "Todo bien") : "Falló") : "—";
+    $("freq").textContent = snap.cron ? "Cada 2 minutos" + (snap.cron.active ? "" : " (pausado)") : "—";
+
+    // Calendario
+    const t = snap.targets || [];
+    const card = $("targetCard");
+    if (t.length) {
+      const avail = t.find((p) => p.available);
+      card.classList.add("found");
+      $("targetTitle").textContent = avail ? "¡Ya está a la venta!" : "Apareció en la tienda, todavía sin stock";
+      $("targetText").textContent = avail ? "Las alertas ya salieron por Telegram. Entra ya:" : "El bot avisa otra vez apenas se pueda comprar.";
+      $("kw").hidden = true;
+      $("targetList").hidden = false;
+      $("targetList").innerHTML = t.map((p) => `<li><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.name)}</a>${p.price ? " · " + money(p.price) : ""} · ${p.available ? "con stock" : "sin stock"}</li>`).join("") +
+        (avail ? `<li style="list-style:none;margin-left:-18px;margin-top:10px"><a class="buy" href="${esc(avail.link)}" target="_blank" rel="noopener">Abrir y comprar</a></li>` : "");
+    } else {
+      card.classList.remove("found");
+      $("targetTitle").textContent = "Todavía no aparece";
+      $("targetText").textContent = "Cada revisión busca en los 50 productos más nuevos y hace búsquedas directas por estas palabras:";
+      $("kw").hidden = false;
+      $("targetList").hidden = true;
+    }
+
+    // Cifras
+    $("sChecks").textContent = snap.checks_24h;
+    $("sErrors").textContent = snap.errors_24h;
+    $("sProducts").textContent = snap.products_known;
+    const subs = snap.subscribers || [];
+    $("sSubs").textContent = subs.length;
+    $("sNames").textContent = subs.map((s) => s.name || "Sin nombre").join(", ");
+
+    // Bitácora
+    const items = [
+      ...runs.map((r) => ({ at: r.ran_at, key: "r" + r.ran_at, ...describeRun(r) })),
+      ...(snap.events || []).map((e) => ({ at: e.at, key: "e" + e.at, ...describeEvent(e) })),
+    ].sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 60);
+    const shown = items.filter((it) => matches(it.tag));
+    $("log").innerHTML = shown.length ? shown.map((it) => {
+      const fresh = !firstRender && !seen.has(it.key);
+      return `<li class="${fresh ? "fresh" : ""}"><time datetime="${esc(it.at)}">${fmtTime(it.at)}</time><span class="tag ${it.tag}">${it.label}</span><span class="msg">${it.msg}</span></li>`;
+    }).join("") : `<li class="empty">No hay actividad de este tipo todavía.</li>`;
+    items.forEach((it) => seen.add(it.key));
+    firstRender = false;
+  }
+
+  // Reloj: el cron corre en cada minuto par (UTC); el bot responde ~2-3 s después
+  function tick() {
+    const now = Date.now() + serverOffset;
+    const next = Math.ceil((now + 1) / CYCLE_MS) * CYCLE_MS;
+    const left = Math.max(0, next - now);
+    const s = Math.ceil(left / 1000);
+    $("countdown").textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    $("ringBar").style.strokeDashoffset = CIRC * (left / CYCLE_MS);
+    if (snap && left < 1000 && mcp) setTimeout(refresh, 6000);
+  }
+  setInterval(tick, 1000);
+  tick();
+
+  // Acciones
+  async function runAction(action) {
+    if (!mcp || busy) return;
+    busy = true;
+    document.querySelectorAll(".act").forEach((b) => (b.disabled = true));
+    const labels = { estado: "Enviando estado…", prueba: "Enviando alerta de prueba…", revisar: "Revisando la tienda…" };
+    toast(labels[action]);
+    try {
+      await api("POST", { action });
+      const done = { estado: "Estado enviado. Revisa Telegram.", prueba: "Alerta de prueba enviada. Debería sonar en unos segundos.", revisar: "Revisión pedida. Aparece en la actividad en unos segundos." };
+      toast(done[action], "ok");
+      setTimeout(refresh, 4000);
+      setTimeout(refresh, 9000);
+    } catch (e) {
+      const [text] = explainError(e);
+      toast(e && e.code === "wait" ? text : text + " Revisa la actividad antes de intentar otra vez.", "bad");
+    } finally {
+      busy = false;
+      document.querySelectorAll(".act").forEach((b) => (b.disabled = false));
+    }
+  }
+  $("btnEstado").addEventListener("click", () => runAction("estado"));
+  $("btnRevisar").addEventListener("click", () => runAction("revisar"));
+  $("btnPrueba").addEventListener("click", () => { $("confirm").hidden = false; $("confirmYes").focus(); });
+  $("confirmNo").addEventListener("click", () => { $("confirm").hidden = true; });
+  $("confirmYes").addEventListener("click", () => { $("confirm").hidden = true; runAction("prueba"); });
+
+  document.querySelectorAll(".chip-btn").forEach((b) => b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    document.querySelectorAll(".chip-btn").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  }));
+
+  function askKey() {
+    $("keybox").hidden = false;
+    document.querySelectorAll(".act").forEach((b) => (b.disabled = true));
+  }
+  function store(k) { try { localStorage.setItem("vigia_key", k); } catch (e) {} }
+  async function start() {
+    $("keybox").hidden = true;
+    banner("");
+    document.querySelectorAll(".act").forEach((b) => (b.disabled = false));
+    setPill("", "Conectando…");
+    await refresh();
+    if (snap) startPolling();
+  }
+  $("keyForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    key = $("keyInput").value.trim();
+    if (!key) return;
+    store(key);
+    start();
+  });
+
+  // Arranque: el código viene en el link (#k=...) o quedó guardado en este navegador
+  (async () => {
+    const m = location.hash.match(/k=([A-Za-z0-9]+)/);
+    if (m) { key = m[1]; store(key); history.replaceState(null, "", location.pathname + location.search); }
+    if (!key) { try { key = localStorage.getItem("vigia_key") || ""; } catch (e) {} }
+    if (!key) { setPill("", "Sin código"); askKey(); return; }
+    await start();
+    document.addEventListener("visibilitychange", () => { if (!document.hidden && key) refresh(); });
+  })();
+})();
+</script>
+
+</body>
+</html>
