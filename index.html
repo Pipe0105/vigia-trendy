@@ -132,9 +132,6 @@ button { font: inherit; cursor: pointer; }
 .config-head .close { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 22px; line-height: 1; display: grid; place-items: center; }
 .config-head .close:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
 .cfg-dialog { overflow-x: hidden; width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 24px 60px rgba(0,0,0,.25); }
-.ro-note { margin: 0; padding: 10px 14px; border-radius: 10px; background: var(--sunk); color: var(--muted); font-size: 13.5px; }
-.config.readonly .addterm, .config.readonly .cfg-actions, .config.readonly .chip button { display: none; }
-.config.readonly .seg button:not([aria-pressed="true"]) { opacity: .45; }
 .cfg-dialog::backdrop { background: rgba(15, 18, 22, .45); }
 .target > .eyebrow { margin-top: auto; }
 .cfg-open { margin: auto -20px -20px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: var(--sunk); color: var(--ink); text-align: left; transition: background .15s; }
@@ -305,7 +302,6 @@ footer { color: var(--muted); font-size: 13px; }
         <span class="dirty" id="cfgDirty" hidden>Cambios sin guardar</span>
         <button class="close" id="cfgClose" type="button" aria-label="Cerrar">×</button>
       </div>
-      <p class="ro-note" id="cfgRO" hidden>Puedes ver la configuración, pero solo quien administra el bot puede cambiarla.</p>
     <div class="cfg-grid">
       <div class="field">
         <span class="label" id="lblFreq">Frecuencia de consulta</span>
@@ -404,8 +400,8 @@ footer { color: var(--muted); font-size: 13px; }
   }
   function explainError(e) {
     switch (e && e.code) {
-      case "solo_admin": return ["Solo quien administra el bot puede cambiar la configuración."];
-      case "wait": return ["Espera unos segundos entre acciones."];
+      case "solo_admin": return ["No se pudo guardar la configuración."];
+      case "wait": return ["Espera unos segundos antes de volver a intentarlo."];
       case "network": return ["Sin conexión con el bot. Reintento en la próxima actualización."];
       default: return ["El bot respondió con un error" + (e && e.message ? ": " + e.message : "") + ". Reintento en la próxima actualización."];
     }
@@ -415,8 +411,6 @@ footer { color: var(--muted); font-size: 13px; }
     if (!mcp) return;
     try {
       snap = await api("GET");
-      if (snap.bad_key) { key = ""; try { localStorage.removeItem("vigia_key"); } catch (e) {} }
-      setAdmin(!!snap.admin);
       serverOffset = new Date(snap.now).getTime() - Date.now();
       banner("");
       render();
@@ -589,15 +583,6 @@ footer { color: var(--muted); font-size: 13px; }
     return list.map((t, i) => `<span class="chip ${kind === "strong" ? "strong" : ""}">${esc(t)}<button type="button" data-kind="${kind}" data-i="${i}" aria-label="Quitar ${esc(t)}">×</button></span>`).join("") ||
       `<span class="help">Sin términos.</span>`;
   }
-  let isAdmin = false;
-  function setAdmin(v) {
-    if (v === isAdmin && document.querySelector(".config").dataset.init) return;
-    isAdmin = v;
-    document.querySelector(".config").dataset.init = "1";
-    document.querySelector(".config").classList.toggle("readonly", !v);
-    $("cfgRO").hidden = v;
-    document.querySelectorAll("#cfgFreq button, #cfgJitter").forEach((el) => (el.disabled = !v));
-  }
   function renderConfig() {
     if (!draft) return;
     document.querySelectorAll("#cfgFreq button").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === draft.interval_min)));
@@ -661,13 +646,9 @@ footer { color: var(--muted); font-size: 13px; }
 
   function store(k) { try { localStorage.setItem("vigia_key", k); } catch (e) {} }
 
-  // Arranque: el panel se ve sin código. La clave de administrador (para cambiar la configuración)
-  // viene en el link del administrador (#k=...) y queda guardada en su navegador.
+  // Arranque: el panel funciona directo, sin código (si un link viejo trae #k=..., se limpia de la barra)
   (async () => {
-    const m = location.hash.match(/k=([A-Za-z0-9]+)/);
-    if (m) { key = m[1]; store(key); history.replaceState(null, "", location.pathname + location.search); }
-    if (!key) { try { key = localStorage.getItem("vigia_key") || ""; } catch (e) {} }
-    setAdmin(false);
+    if (/k=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search);
     setPill("", "Conectando…");
     await refresh();
     startPolling();
