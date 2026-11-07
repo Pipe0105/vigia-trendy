@@ -122,9 +122,6 @@ button { font: inherit; cursor: pointer; }
 .confirm p { margin: 0; flex: 1 1 240px; min-width: 0; }
 .btn { padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; }
 .btn.go { background: var(--berry); border-color: var(--berry); color: #fff; }
-.keybox { display: grid; gap: 10px; }
-.keybox form { display: flex; flex-wrap: wrap; gap: 8px; }
-.keybox input { flex: 1 1 220px; min-width: 0; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-family: var(--f-mono); }
 .toast { margin: 0; font-size: 14px; color: var(--muted); min-height: 1.5em; }
 .toast.ok { color: var(--ok); }
 .toast.bad { color: var(--bad); }
@@ -135,6 +132,9 @@ button { font: inherit; cursor: pointer; }
 .config-head .close { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 22px; line-height: 1; display: grid; place-items: center; }
 .config-head .close:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
 .cfg-dialog { overflow-x: hidden; width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+.ro-note { margin: 0; padding: 10px 14px; border-radius: 10px; background: var(--sunk); color: var(--muted); font-size: 13.5px; }
+.config.readonly .addterm, .config.readonly .cfg-actions, .config.readonly .chip button { display: none; }
+.config.readonly .seg button:not([aria-pressed="true"]) { opacity: .45; }
 .cfg-dialog::backdrop { background: rgba(15, 18, 22, .45); }
 .target > .eyebrow { margin-top: auto; }
 .cfg-open { margin: auto -20px -20px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: var(--sunk); color: var(--ink); text-align: left; transition: background .15s; }
@@ -230,12 +230,6 @@ footer { color: var(--muted); font-size: 13px; }
     <p id="bannerText"></p>
   </div>
 
-  <div class="card keybox" id="keybox" hidden>
-    <p class="eyebrow">Código de acceso</p>
-    <p style="margin:0">Abre el link que te compartieron o pega aquí el código del panel.</p>
-    <form id="keyForm"><input id="keyInput" autocomplete="off" placeholder="Código del panel" aria-label="Código del panel"><button class="btn go" type="submit">Entrar</button></form>
-  </div>
-
   <section class="top">
     <div class="card">
       <p class="eyebrow">Próxima revisión de la tienda</p>
@@ -311,6 +305,7 @@ footer { color: var(--muted); font-size: 13px; }
         <span class="dirty" id="cfgDirty" hidden>Cambios sin guardar</span>
         <button class="close" id="cfgClose" type="button" aria-label="Cerrar">×</button>
       </div>
+      <p class="ro-note" id="cfgRO" hidden>Puedes ver la configuración, pero solo quien administra el bot puede cambiarla.</p>
     <div class="cfg-grid">
       <div class="field">
         <span class="label" id="lblFreq">Frecuencia de consulta</span>
@@ -402,14 +397,14 @@ footer { color: var(--muted); font-size: 13px; }
       r = await fetch(API, { method, headers: { "x-panel-key": key, ...(body ? { "content-type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
     } catch (e) { throw new ApiError("network"); }
     const data = await r.json().catch(() => ({}));
-    if (r.status === 401) throw new ApiError("bad_key");
+    if (r.status === 403) throw new ApiError("solo_admin");
     if (r.status === 429) throw new ApiError("wait");
     if (!r.ok) throw new ApiError("server", data.error);
     return data;
   }
   function explainError(e) {
     switch (e && e.code) {
-      case "bad_key": return ["El código de acceso no es válido. Pide el link actualizado."];
+      case "solo_admin": return ["Solo quien administra el bot puede cambiar la configuración."];
       case "wait": return ["Espera unos segundos entre acciones."];
       case "network": return ["Sin conexión con el bot. Reintento en la próxima actualización."];
       default: return ["El bot respondió con un error" + (e && e.message ? ": " + e.message : "") + ". Reintento en la próxima actualización."];
@@ -420,6 +415,8 @@ footer { color: var(--muted); font-size: 13px; }
     if (!mcp) return;
     try {
       snap = await api("GET");
+      if (snap.bad_key) { key = ""; try { localStorage.removeItem("vigia_key"); } catch (e) {} }
+      setAdmin(!!snap.admin);
       serverOffset = new Date(snap.now).getTime() - Date.now();
       banner("");
       render();
@@ -429,7 +426,6 @@ footer { color: var(--muted); font-size: 13px; }
       banner(text);
       if (!snap) setPill("bad", "Sin conexión");
       else $("updated").textContent = "Datos de " + fmtTime(snap.now) + " · sin actualizar";
-      if (e && e.code === "bad_key") { stopPolling(); askKey(); }
     }
   }
   function startPolling() { stopPolling(); pollTimer = setInterval(refresh, POLL_MS); }
@@ -593,6 +589,15 @@ footer { color: var(--muted); font-size: 13px; }
     return list.map((t, i) => `<span class="chip ${kind === "strong" ? "strong" : ""}">${esc(t)}<button type="button" data-kind="${kind}" data-i="${i}" aria-label="Quitar ${esc(t)}">×</button></span>`).join("") ||
       `<span class="help">Sin términos.</span>`;
   }
+  let isAdmin = false;
+  function setAdmin(v) {
+    if (v === isAdmin && document.querySelector(".config").dataset.init) return;
+    isAdmin = v;
+    document.querySelector(".config").dataset.init = "1";
+    document.querySelector(".config").classList.toggle("readonly", !v);
+    $("cfgRO").hidden = v;
+    document.querySelectorAll("#cfgFreq button, #cfgJitter").forEach((el) => (el.disabled = !v));
+  }
   function renderConfig() {
     if (!draft) return;
     document.querySelectorAll("#cfgFreq button").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === draft.interval_min)));
@@ -654,35 +659,19 @@ footer { color: var(--muted); font-size: 13px; }
   $("cfgClose").addEventListener("click", () => { const d = $("cfgBox"); if (d.close) d.close(); else d.removeAttribute("open"); });
   $("cfgBox").addEventListener("click", (ev) => { if (ev.target === $("cfgBox")) $("cfgBox").close(); });
 
-  function askKey() {
-    $("keybox").hidden = false;
-    document.querySelectorAll(".act").forEach((b) => (b.disabled = true));
-  }
   function store(k) { try { localStorage.setItem("vigia_key", k); } catch (e) {} }
-  async function start() {
-    $("keybox").hidden = true;
-    banner("");
-    document.querySelectorAll(".act").forEach((b) => (b.disabled = false));
-    setPill("", "Conectando…");
-    await refresh();
-    if (snap) startPolling();
-  }
-  $("keyForm").addEventListener("submit", (ev) => {
-    ev.preventDefault();
-    key = $("keyInput").value.trim();
-    if (!key) return;
-    store(key);
-    start();
-  });
 
-  // Arranque: el código viene en el link (#k=...) o quedó guardado en este navegador
+  // Arranque: el panel se ve sin código. La clave de administrador (para cambiar la configuración)
+  // viene en el link del administrador (#k=...) y queda guardada en su navegador.
   (async () => {
     const m = location.hash.match(/k=([A-Za-z0-9]+)/);
     if (m) { key = m[1]; store(key); history.replaceState(null, "", location.pathname + location.search); }
     if (!key) { try { key = localStorage.getItem("vigia_key") || ""; } catch (e) {} }
-    if (!key) { setPill("", "Sin código"); askKey(); return; }
-    await start();
-    document.addEventListener("visibilitychange", () => { if (!document.hidden && key) refresh(); });
+    setAdmin(false);
+    setPill("", "Conectando…");
+    await refresh();
+    startPolling();
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
   })();
 })();
 </script>
