@@ -213,9 +213,9 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="card target" id="targetCard">
       <p class="eyebrow">Calendario de adviento</p>
       <h2 id="targetTitle">Esperando datos del bot…</h2>
-      <p id="targetText">Lo busca en los 50 productos más nuevos cada 2 minutos, en todo el catálogo cada ~8 minutos, en los anuncios de la página de inicio y en la página del calendario del año pasado. Alerta grande con:</p>
+      <p id="targetText">Lo busca en los 50 productos más nuevos cada 2 minutos, en todo el catálogo cada ~8 minutos, en los anuncios de la página de inicio y en la página del calendario de 2025. Alerta grande con:</p>
       <div class="keywords" id="kw"><span class="kw">adviento</span><span class="kw">calendario</span><span class="kw">advent</span></div>
-      <p class="hint">El año pasado la preventa abrió el 12 de noviembre. <a href="https://www.maquillajetrendyshop.com/calendario-de-adviento-nick-90s" target="_blank" rel="noopener">Ver la página del calendario</a></p>
+      <p class="hint">Solo como referencia: el calendario de 2025 (Nick 90's) abrió preventa el 12 de noviembre. El de este año puede ser distinto. <a href="https://www.maquillajetrendyshop.com/calendario-de-adviento-nick-90s" target="_blank" rel="noopener">Ver la página de 2025</a></p>
       <ul id="targetList" hidden></ul>
     </div>
   </section>
@@ -410,7 +410,7 @@ footer { color: var(--muted); font-size: 13px; }
     } else {
       card.classList.remove("found");
       $("targetTitle").textContent = "Todavía no aparece";
-      $("targetText").textContent = "Lo busca en los 50 productos más nuevos cada 2 minutos, en todo el catálogo cada ~8 minutos, en los anuncios de la página de inicio y en la página del calendario del año pasado. Alerta grande con:";
+      $("targetText").textContent = "Lo busca en los 50 productos más nuevos cada 2 minutos, en todo el catálogo cada ~8 minutos, en los anuncios de la página de inicio y en la página del calendario de 2025. Alerta grande con:";
       $("kw").hidden = false;
       document.querySelector(".target .hint").hidden = false;
       $("targetList").hidden = true;
