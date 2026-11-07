@@ -92,7 +92,7 @@ header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content:
 .clock dt { font-size: 12px; color: var(--muted); }
 .clock dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-.target { display: grid; gap: 12px; align-content: center; border-top: 4px solid var(--berry); }
+.target { display: flex; flex-direction: column; gap: 12px; overflow: hidden; border-top: 4px solid var(--berry); }
 .target h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(22px, 3.4vw, 28px); line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
 .target p { margin: 0; color: var(--muted); }
 .target.found { background: var(--berry); border-color: var(--berry); color: #fff; }
@@ -136,15 +136,20 @@ button { font: inherit; cursor: pointer; }
 .config-head .close:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
 .cfg-dialog { overflow-x: hidden; width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 24px 60px rgba(0,0,0,.25); }
 .cfg-dialog::backdrop { background: rgba(15, 18, 22, .45); }
-.cfg-open { justify-self: start; display: inline-flex; align-items: center; gap: 10px; margin-top: 4px; padding: 9px 14px 9px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--sunk); color: var(--ink); text-align: left; }
-.cfg-open:hover { border-color: var(--teal); background: var(--teal-soft); }
-.cfg-open:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.target > .eyebrow { margin-top: auto; }
+.cfg-open { margin: auto -20px -20px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: var(--sunk); color: var(--ink); text-align: left; transition: background .15s; }
+.cfg-open:hover { background: var(--teal-soft); }
+.cfg-open .chev { width: 18px; height: 18px; margin-left: auto; color: var(--muted); transition: transform .15s; }
+.cfg-open:hover .chev { transform: translateX(3px); color: var(--teal); }
+.cfg-open:focus-visible { outline: 3px solid var(--teal); outline-offset: -3px; }
 .cfg-open svg { width: 22px; height: 22px; flex: none; color: var(--teal); }
+.cfg-open .gear { padding: 7px; width: 36px; height: 36px; border-radius: 10px; background: var(--surface); }
 .cfg-open span { display: grid; line-height: 1.3; min-width: 0; }
 .cfg-open strong { font-size: 14px; font-weight: 600; }
 .cfg-open small { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
-.target.found .cfg-open { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.35); color: #fff; }
-.target.found .cfg-open small, .target.found .cfg-open svg { color: #ffe3ec; }
+.target.found .cfg-open { background: rgba(0,0,0,.14); border-top-color: rgba(255,255,255,.25); color: #fff; }
+.target.found .cfg-open .gear { background: rgba(255,255,255,.15); }
+.target.found .cfg-open small, .target.found .cfg-open svg, .target.found .cfg-open .chev { color: #ffe3ec; }
 .dirty { font-size: 13px; font-weight: 600; color: var(--warn); }
 .cfg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
 @media (max-width: 760px) { .cfg-grid { grid-template-columns: minmax(0, 1fr); } }
@@ -254,8 +259,9 @@ footer { color: var(--muted); font-size: 13px; }
       <p id="targetText" hidden></p>
       <ul id="targetList" hidden></ul>
       <button class="cfg-open" id="cfgOpen" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+        <svg class="gear" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
         <span><strong>Configuración del monitor</strong><small id="cfgSummary">—</small></span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
   </section>
