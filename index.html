@@ -306,6 +306,7 @@ footer { color: var(--muted); font-size: 13px; }
       <div class="field">
         <span class="label" id="lblFreq">Frecuencia de consulta</span>
         <div class="seg" id="cfgFreq" role="group" aria-labelledby="lblFreq">
+          <button type="button" data-v="0.5" aria-pressed="false">30 s</button>
           <button type="button" data-v="1" aria-pressed="false">1 min</button>
           <button type="button" data-v="2" aria-pressed="false">2 min</button>
           <button type="button" data-v="3" aria-pressed="false">3 min</button>
@@ -366,8 +367,9 @@ footer { color: var(--muted); font-size: 13px; }
   let busy = false;
   let cfg = null;        // configuración guardada
   let draft = null;      // lo que se está editando
-  const everyTxt = () => { const n = (cfg && cfg.interval_min) || 2; return n === 1 ? "cada minuto" : "cada " + n + " minutos"; };
-  const fullMins = () => { const n = (cfg && cfg.interval_min) || 2; const per = Math.max(1, Math.min(4, Math.round(n))); return Math.ceil(((snap && snap.full_total) || 310) / 50 / per) * n; };
+  const freqShort = (n) => n < 1 ? Math.round(n * 60) + " s" : n + " min";
+  const everyTxt = () => { const n = (cfg && cfg.interval_min) || 2; return n < 1 ? "cada " + Math.round(n * 60) + " segundos" : n === 1 ? "cada minuto" : "cada " + n + " minutos"; };
+  const fullMins = () => { const n = (cfg && cfg.interval_min) || 2; const per = Math.max(1, Math.min(4, Math.round(n))); return Math.max(1, Math.round(Math.ceil(((snap && snap.full_total) || 310) / 50 / per) * n)); };
 
   const R = 52, CIRC = 2 * Math.PI * R;
   $("ringBar").style.strokeDasharray = CIRC;
@@ -452,7 +454,7 @@ footer { color: var(--muted); font-size: 13px; }
       const what = d.action === "prueba" ? "Alerta de prueba enviada" : d.action === "estado" ? "Estado enviado" : "Acción " + esc(d.action);
       return { tag: "panel", label: "Panel", msg: what + " a " + (d.sent ?? 0) + (d.sent === 1 ? " chat" : " chats") };
     }
-    if (e.kind === "config") return { tag: "panel", label: "Config", msg: "Configuración guardada: " + (d.interval_min === 1 ? "cada minuto" : "cada " + d.interval_min + " min") + " · variación " + d.jitter_s + " s · " + (d.strong || []).length + " términos principales y " + (d.soft || []).length + " secundarios" };
+    if (e.kind === "config") return { tag: "panel", label: "Config", msg: "Configuración guardada: cada " + freqShort(Number(d.interval_min)) + " · variación " + d.jitter_s + " s · " + (d.strong || []).length + " términos principales y " + (d.soft || []).length + " secundarios" };
     return { tag: "", label: esc(e.kind), msg: esc(JSON.stringify(d)) };
   }
   function matches(tag) {
@@ -530,10 +532,13 @@ footer { color: var(--muted); font-size: 13px; }
     firstRender = false;
   }
 
-  // Reloj: el cron corre en cada minuto par (UTC); el bot responde ~2-3 s después
+  // Reloj: se sincroniza con el último arranque real del bot; si no lo hay, con el minuto exacto
   function tick() {
     const now = Date.now() + serverOffset;
-    const next = Math.ceil((now + 1) / CYCLE_MS) * CYCLE_MS;
+    const anchor = snap && snap.cron_last_start ? Date.parse(snap.cron_last_start) : 0;
+    const next = anchor
+      ? anchor + Math.ceil((now + 1 - anchor) / CYCLE_MS) * CYCLE_MS
+      : Math.ceil((now + 1) / CYCLE_MS) * CYCLE_MS;
     const left = Math.max(0, next - now);
     const s = Math.ceil(left / 1000);
     $("countdown").textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
@@ -587,12 +592,14 @@ footer { color: var(--muted); font-size: 13px; }
     if (!draft) return;
     document.querySelectorAll("#cfgFreq button").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === draft.interval_min)));
     $("cfgJitter").value = draft.jitter_s;
-    $("cfgJitterVal").textContent = draft.jitter_s + " s";
+    const cap = Math.floor(draft.interval_min * 60 * 0.3);
+    $("cfgJitterVal").textContent = draft.jitter_s > cap ? cap + " s*" : draft.jitter_s + " s";
+    $("cfgJitterVal").title = draft.jitter_s > cap ? "Con esta frecuencia la variación se limita a " + cap + " s para que una revisión termine antes de la siguiente" : "";
     $("chipsStrong").innerHTML = chipsHtml(draft.strong, "strong");
     $("chipsSoft").innerHTML = chipsHtml(draft.soft, "soft");
     const dirty = isDirty();
     $("cfgDirty").hidden = !dirty;
-    if (cfg) $("cfgSummary").textContent = (cfg.interval_min === 1 ? "Cada minuto" : "Cada " + cfg.interval_min + " min") + " · variación " + cfg.jitter_s + " s · " + cfg.strong.length + " términos principales, " + cfg.soft.length + " secundarios";
+    if (cfg) $("cfgSummary").textContent = "Cada " + freqShort(Number(cfg.interval_min)) + " · variación " + cfg.jitter_s + " s · " + cfg.strong.length + " términos principales, " + cfg.soft.length + " secundarios";
     $("cfgSave").disabled = !dirty;
     $("cfgReset").disabled = !dirty;
   }
