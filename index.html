@@ -74,6 +74,12 @@ header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content:
 .pill.bad { background: var(--bad-soft); color: var(--bad); }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
 
+.congrats { position: relative; overflow: hidden; border-radius: 18px; padding: 26px 24px; background: linear-gradient(135deg, #7a1236 0%, #a3174a 55%, #0f6b6a 130%); color: #fff; }
+.congrats .confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.congrats-body { position: relative; display: grid; gap: 8px; max-width: 62ch; }
+.congrats-kicker { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #ffd6e4; }
+.congrats h2 { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: clamp(26px, 4.6vw, 38px); line-height: 1.1; letter-spacing: -0.01em; text-wrap: balance; }
+.congrats-body > p:last-child { margin: 0; font-size: 15.5px; line-height: 1.55; color: #fff3f7; }
 .banner { padding: 14px 16px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
 .banner p { margin: 0; flex: 1 1 260px; min-width: 0; }
 
@@ -222,6 +228,15 @@ footer { color: var(--muted); font-size: 13px; }
       </a>
     </div>
   </header>
+
+  <section class="congrats" aria-label="Felicitaciones">
+    <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
+    <div class="congrats-body">
+      <p class="congrats-kicker">Misión cumplida · 10 de noviembre</p>
+      <h2>¡Felicitaciones, María! 🎄</h2>
+      <p>Lo lograste: los Calendarios de Adviento Wonderland ya son tuyos. Ahora solo queda esperar el baúl borgoña y abrir una sorpresa cada día hasta Navidad. ¡Disfrútalos muchísimo!</p>
+    </div>
+  </section>
 
   <div class="banner" id="banner" hidden>
     <p id="bannerText"></p>
@@ -534,6 +549,11 @@ footer { color: var(--muted); font-size: 13px; }
 
   // Reloj: se sincroniza con el último arranque real del bot; si no lo hay, con el minuto exacto
   function tick() {
+    if (snap && snap.cron && !snap.cron.active) {
+      $("countdown").textContent = "—";
+      $("ringBar").style.strokeDashoffset = CIRC;
+      return;
+    }
     const now = Date.now() + serverOffset;
     const anchor = snap && snap.cron_last_start ? Date.parse(snap.cron_last_start) : 0;
     const next = anchor
@@ -652,6 +672,31 @@ footer { color: var(--muted); font-size: 13px; }
   $("cfgBox").addEventListener("click", (ev) => { if (ev.target === $("cfgBox")) $("cfgBox").close(); });
 
   function store(k) { try { localStorage.setItem("vigia_key", k); } catch (e) {} }
+
+  // Confeti breve sobre la tarjeta de felicitaciones
+  (() => {
+    const c = $("confetti");
+    if (!c || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    const ctx = c.getContext("2d");
+    const colors = ["#ffd6e4", "#ffffff", "#f7c948", "#4fd1c5", "#ff6b9e"];
+    let W = 0, H = 0;
+    const size = () => { const r = c.getBoundingClientRect(); W = c.width = r.width * devicePixelRatio; H = c.height = r.height * devicePixelRatio; };
+    size(); addEventListener("resize", size);
+    const parts = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: -Math.random() * H, r: (3 + Math.random() * 4) * devicePixelRatio, vy: (1 + Math.random() * 2) * devicePixelRatio, vx: (Math.random() - .5) * devicePixelRatio, a: Math.random() * 6, c: colors[(Math.random() * colors.length) | 0] }));
+    const end = Date.now() + 6000;
+    (function frame() {
+      ctx.clearRect(0, 0, W, H);
+      const done = Date.now() > end;
+      let alive = 0;
+      for (const p of parts) {
+        p.y += p.vy; p.x += p.vx; p.a += .08;
+        if (p.y > H) { if (done) continue; p.y = -10; p.x = Math.random() * W; }
+        alive++;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore();
+      }
+      if (alive) requestAnimationFrame(frame); else ctx.clearRect(0, 0, W, H);
+    })();
+  })();
 
   // Arranque: el panel funciona directo, sin código (si un link viejo trae #k=..., se limpia de la barra)
   (async () => {
