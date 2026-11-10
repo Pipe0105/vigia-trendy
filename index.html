@@ -469,6 +469,7 @@ footer { color: var(--muted); font-size: 13px; }
       const what = d.action === "prueba" ? "Alerta de prueba enviada" : d.action === "estado" ? "Estado enviado" : "Acción " + esc(d.action);
       return { tag: "panel", label: "Panel", msg: what + " a " + (d.sent ?? 0) + (d.sent === 1 ? " chat" : " chats") };
     }
+    if (e.kind === "config" && d.pausado) return { tag: "panel", label: "Pausa", msg: "Bot en pausa: dejó de revisar la tienda" };
     if (e.kind === "config") return { tag: "panel", label: "Config", msg: "Configuración guardada: cada " + freqShort(Number(d.interval_min)) + " · variación " + d.jitter_s + " s · " + (d.strong || []).length + " términos principales y " + (d.soft || []).length + " secundarios" };
     return { tag: "", label: esc(e.kind), msg: esc(JSON.stringify(d)) };
   }
